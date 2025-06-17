@@ -64,19 +64,19 @@
     <div class="section featured">
       <div class="container">
         <div class="row">
-          <div class="col-lg-3">
+          <div class="col-lg-3 col-md-6">
             <h3>Latest Blog</h3>
             <div id="latest-blog"></div>
           </div>
-          <div class="col-lg-3">
+          <div class="col-lg-3 col-md-6">
             <h3>Latest Paper</h3>
             <div id="latest-paper"></div>
           </div>
-          <div class="col-lg-3">
+          <div class="col-lg-3 col-md-6">
             <h3>Latest Video</h3>
             <div id="latest-video"></div>
           </div>
-          <div class="col-lg-3">
+          <div class="col-lg-3 col-md-6">
             <h3>Latest Presentation</h3>
             <div id="latest-presentation"></div>
           </div>
@@ -103,53 +103,89 @@
     <script src="assets/js/counter.js"></script>
     <script src="assets/js/custom.js"></script>
     <script>
+      function getFileId(url) {
+        const match = url.match(/\/d\/([^\/]+)/) || url.match(/\/presentation\/d\/([^\/]+)/);
+        return match ? match[1] : null;
+      }
+
       fetch('content.json')
         .then(response => response.json())
         .then(data => {
           if (data.blogs.length > 0) {
             const latestBlog = data.blogs[data.blogs.length - 1];
-            const blogDiv = document.getElementById('latest-blog');
-            blogDiv.innerHTML = `<h4>${latestBlog.title}</h4><button onclick="showContent('blog', '${latestBlog.file}')">View</button>`;
+            document.getElementById('latest-blog').innerHTML = `
+              <div class="card">
+                <img src="assets/images/blog-icon.png" alt="Blog">
+                <div class="card-body">
+                  <h4>${latestBlog.title}</h4>
+                  <p>${latestBlog.description || 'No description available'}</p>
+                  <button onclick="showContent('blog', '${latestBlog.file}')">Read</button>
+                </div>
+              </div>
+            `;
           }
           if (data.papers.length > 0) {
             const latestPaper = data.papers[data.papers.length - 1];
-            const paperDiv = document.getElementById('latest-paper');
-            paperDiv.innerHTML = `<h4>${latestPaper.title}</h4><button onclick="showContent('pdf', '${latestPaper.url}')">View</button>`;
+            const paperId = getFileId(latestPaper.url);
+            document.getElementById('latest-paper').innerHTML = `
+              <div class="card">
+                <img src="https://drive.google.com/thumbnail?id=${paperId}" alt="${latestPaper.title}" onerror="this.src='assets/images/paper-icon.png'">
+                <div class="card-body">
+                  <h4>${latestPaper.title}</h4>
+                  <p>${latestPaper.description || 'No description available'}</p>
+                  <button onclick="showContent('pdf', '${latestPaper.url}')">View</button>
+                </div>
+              </div>
+            `;
           }
           if (data.videos.length > 0) {
             const latestVideo = data.videos[data.videos.length - 1];
-            const videoDiv = document.getElementById('latest-video');
-            videoDiv.innerHTML = `<h4>${latestVideo.title}</h4><button onclick="showContent('video', '${latestVideo.url}')">View</button>`;
+            const videoId = getFileId(latestVideo.url);
+            document.getElementById('latest-video').innerHTML = `
+              <div class="card">
+                <img src="https://drive.google.com/thumbnail?id=${videoId}" alt="${latestVideo.title}" onerror="this.src='assets/images/video-icon.png'">
+                <div class="card-body">
+                  <h4>${latestVideo.title}</h4>
+                  <p>${latestVideo.description || 'No description available'}</p>
+                  <button onclick="showContent('video', '${latestVideo.url}')">View</button>
+                </div>
+              </div>
+            `;
           }
           if (data.presentations.length > 0) {
             const latestPresentation = data.presentations[data.presentations.length - 1];
-            const presentationDiv = document.getElementById('latest-presentation');
-            presentationDiv.innerHTML = `<h4>${latestPresentation.title}</h4><button onclick="showContent('presentation', '${latestPresentation.url}')">View</button>`;
+            document.getElementById('latest-presentation').innerHTML = `
+              <div class="card">
+                <img src="assets/images/presentation-icon.png" alt="Presentation">
+                <div class="card-body">
+                  <h4>${latestPresentation.title}</h4>
+                  <p>${latestPresentation.description || 'No description available'}</p>
+                  <button onclick="showContent('presentation', '${latestPresentation.url}')">View</button>
+                </div>
+              </div>
+            `;
           }
         });
 
       function showContent(type, url) {
         const modal = document.getElementById('content-modal');
         const modalBody = document.getElementById('modal-body');
+        const fileId = getFileId(url);
         if (type === 'blog') {
-          fetch(url.replace('/view?usp=sharing', '/preview'))
+          fetch(`https://drive.google.com/uc?export=download&id=${fileId}`)
             .then(response => response.text())
             .then(text => {
-              modalBody.innerHTML = marked(text);
+              modalBody.innerHTML = url.endsWith('.md') ? marked(text) : `<pre>${text}</pre>`;
               modal.style.display = 'block';
             });
         } else if (type === 'pdf') {
-          const embedUrl = url.replace('/view?usp=sharing', '/preview');
-          modalBody.innerHTML = `<iframe src="${embedUrl}" width="100%" height="600px"></iframe>`;
+          modalBody.innerHTML = `<iframe src="https://drive.google.com/file/d/${fileId}/preview" width="100%" height="600px"></iframe>`;
           modal.style.display = 'block';
         } else if (type === 'video') {
-          const videoId = url.split('/d/')[1].split('/')[0];
-          const embedUrl = `https://drive.google.com/file/d/${videoId}/preview`;
-          modalBody.innerHTML = `<iframe src="${embedUrl}" width="100%" height="400px"></iframe>`;
+          modalBody.innerHTML = `<iframe src="https://drive.google.com/file/d/${fileId}/preview" width="100%" height="400px"></iframe>`;
           modal.style.display = 'block';
         } else if (type === 'presentation') {
-          const embedUrl = url.replace('/edit?usp=sharing', '/embed');
-          modalBody.innerHTML = `<iframe src="${embedUrl}" width="100%" height="600px"></iframe>`;
+          modalBody.innerHTML = `<iframe src="https://docs.google.com/presentation/d/${fileId}/embed" width="100%" height="600px"></iframe>`;
           modal.style.display = 'block';
         }
       }

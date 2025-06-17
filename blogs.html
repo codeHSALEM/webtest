@@ -30,7 +30,7 @@
           <div class="col-12">
             <nav class="main-nav">
               <a href="index.html" class="logo">
-                <img src="assets/images/logo.png" alt="Elaa El Hadef" style="width: 400PX;">
+                <img src="assets/images/logo.png" alt="Elaa El Hadef" style="width: 400px;">
               </a>
               <ul class="nav">
                 <li><a href="index.html">Home</a></li>
@@ -82,6 +82,11 @@
     <script src="assets/js/counter.js"></script>
     <script src="assets/js/custom.js"></script>
     <script>
+      function getFileId(url) {
+        const match = url.match(/\/d\/([^\/]+)/);
+        return match ? match[1] : null;
+      }
+
       fetch('content.json')
         .then(response => response.json())
         .then(data => {
@@ -89,7 +94,16 @@
           data.blogs.forEach(blog => {
             const div = document.createElement('div');
             div.className = 'col-lg-4 col-md-6';
-            div.innerHTML = `<div class="item"><div class="down-content"><h4>${blog.title}</h4><button onclick="showContent('blog', '${blog.file}')">Read</button></div></div>`;
+            div.innerHTML = `
+              <div class="item card">
+                <img src="assets/images/blog-icon.png" alt="Blog">
+                <div class="card-body">
+                  <h4>${blog.title}</h4>
+                  <p>${blog.description || 'No description available'}</p>
+                  <button onclick="showContent('blog', '${blog.file}')">Read</button>
+                </div>
+              </div>
+            `;
             blogsList.appendChild(div);
           });
         });
@@ -97,11 +111,12 @@
       function showContent(type, url) {
         const modal = document.getElementById('content-modal');
         const modalBody = document.getElementById('modal-body');
+        const fileId = getFileId(url);
         if (type === 'blog') {
-          fetch(url.replace('/view?usp=sharing', '/preview'))
+          fetch(`https://drive.google.com/uc?export=download&id=${fileId}`)
             .then(response => response.text())
             .then(text => {
-              modalBody.innerHTML = marked(text);
+              modalBody.innerHTML = url.endsWith('.md') ? marked(text) : `<pre>${text}</pre>`;
               modal.style.display = 'block';
             });
         }
